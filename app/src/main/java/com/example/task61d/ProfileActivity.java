@@ -2,56 +2,50 @@ package com.example.task61d;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
-public class ProfileActivity extends AppCompatActivity {
+public class DashboardActivity extends AppCompatActivity {
 
-    private TextView tvUsername, tvEmail, tvTotal, tvCorrect, tvIncorrect;
-    private Button btnShare;
+    private String username;
+    private TextView greeting;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_profile);  // 注意：使用美化版 activity_profile_pretty.xml 时请改为对应名称
+        setContentView(R.layout.activity_dashboard);
 
-        // 绑定视图
-        tvUsername = findViewById(R.id.tvUsername);
-        tvEmail = findViewById(R.id.tvEmail);
-        tvTotal = findViewById(R.id.tvTotal);
-        tvCorrect = findViewById(R.id.tvCorrect);
-        tvIncorrect = findViewById(R.id.tvIncorrect);
-        btnShare = findViewById(R.id.btnShare);
+        // 获取从登录页传入的用户名
+        username = getIntent().getStringExtra("username");
+        greeting = findViewById(R.id.tvGreeting);
+        greeting.setText("Hello, " + (username != null ? username : "User"));
 
-        // 从 Intent 获取用户信息
-        String username = getIntent().getStringExtra("username");
-        String email = getIntent().getStringExtra("email");
+        // 绑定卡片并设置点击事件
+        LinearLayout taskCard = findViewById(R.id.taskCard);
+        LinearLayout profileCard = findViewById(R.id.profileCard);
+        LinearLayout historyCard = findViewById(R.id.historyCard);
+        LinearLayout upgradeCard = findViewById(R.id.upgradeCard);
+        LinearLayout shareCard = findViewById(R.id.shareCard);
 
-        // 示例：统计信息（后续可替换为真实数据）
-        int totalQuestions = 10;
-        int correctAnswers = 7;
-        int incorrectAnswers = totalQuestions - correctAnswers;
+        // 跳转各个功能页面
+        taskCard.setOnClickListener(v -> startActivity(new Intent(this, TaskDetailActivity.class)));
 
-        // 设置文本
-        tvUsername.setText(username != null ? username : "Username");
-        tvEmail.setText(email != null ? email : "user@email.com");
-        tvTotal.setText(String.valueOf(totalQuestions));
-        tvCorrect.setText(String.valueOf(correctAnswers));
-        tvIncorrect.setText(String.valueOf(incorrectAnswers));
-
-        // 分享按钮逻辑（示例）
-        btnShare.setOnClickListener(v -> {
-            String shareText = "👤 " + tvUsername.getText().toString() +
-                    "\n📧 " + tvEmail.getText().toString() +
-                    "\n✅ Correct: " + tvCorrect.getText().toString() +
-                    "\n❌ Incorrect: " + tvIncorrect.getText().toString();
-
-            Intent intent = new Intent(Intent.ACTION_SEND);
-            intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TEXT, shareText);
-            startActivity(Intent.createChooser(intent, "Share Profile Via"));
+        profileCard.setOnClickListener(v -> {
+            Intent intent = new Intent(this, ProfileActivity.class);
+            intent.putExtra("username", username);
+            intent.putExtra("email", username + "@example.com"); // 示例邮箱
+            startActivity(intent);
         });
+
+        historyCard.setOnClickListener(v -> {
+            Intent intent = new Intent(this, HistoryActivity.class);
+            intent.putExtra("username", username);
+            startActivity(intent);
+        });
+
+        upgradeCard.setOnClickListener(v -> startActivity(new Intent(this, UpgradeActivity.class)));
+
+        shareCard.setOnClickListener(v -> startActivity(new Intent(this, ShareProfileActivity.class)));
     }
 }
