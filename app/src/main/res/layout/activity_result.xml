@@ -1,29 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:padding="24dp"
-    android:background="#E3F2FD"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:background="#D6F4FF"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:text="Your Results"
-        android:textSize="22sp"
-        android:textColor="#0D47A1"
-        android:layout_marginBottom="16dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="24dp"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/tvResults"
-        android:text="Processing..."
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Your Results"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#000000"/>
 
-    <Button
-        android:id="@+id/btnContinue"
-        android:text="Continue"
-        android:layout_marginTop="24dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
-</LinearLayout>
+        <LinearLayout
+            android:id="@+id/resultContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="16dp"/>
+
+        <Button
+            android:id="@+id/btnContinue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Continue"
+            android:textColor="#000000"
+            android:background="#00FF66"
+            android:layout_marginTop="24dp"/>
+    </LinearLayout>
+</ScrollView>
