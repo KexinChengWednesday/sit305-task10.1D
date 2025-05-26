@@ -5,15 +5,25 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Scanner;
 
 public class ResultActivity extends AppCompatActivity {
 
     private LinearLayout resultContainer;
-    private Button continueBtn;
+    private Button btnContinue;
+
+    private String LLM_API_URL = "https://llm2chatbot-f3c8a49e3bb7.herokuapp.com/api/chat";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -21,62 +31,99 @@ public class ResultActivity extends AppCompatActivity {
         setContentView(R.layout.activity_result);
 
         resultContainer = findViewById(R.id.resultContainer);
-        continueBtn = findViewById(R.id.btnContinue);
+        btnContinue = findViewById(R.id.btnContinue);
+
+        String quizJson = getIntent().getStringExtra("quiz_data");
+        String answerJson = getIntent().getStringExtra("user_answers");
 
         try {
-            String quizData = getIntent().getStringExtra("quiz_data");
-            String answers = getIntent().getStringExtra("user_answers");
-
-            JSONArray quizArray = new JSONArray(quizData);
-            JSONArray answerArray = new JSONArray(answers);
+            JSONArray quizArray = new JSONArray(quizJson);
+            JSONArray answerArray = new JSONArray(answerJson);
 
             for (int i = 0; i < quizArray.length(); i++) {
-                JSONObject qObj = quizArray.getJSONObject(i);
-                String question = qObj.getString("question");
+                JSONObject questionObj = quizArray.getJSONObject(i);
+                String question = questionObj.getString("question");
+                String correctAnswer = questionObj.getString("answer");
                 String userAnswer = answerArray.getString(i);
 
-                // 模拟模型分析文本
-                String analysis = generateFeedback(question, userAnswer);
+                int index = i + 1;
+                boolean isCorrect = correctAnswer.equalsIgnoreCase(userAnswer);
 
-                TextView resultBlock = new TextView(this);
-                resultBlock.setText((i + 1) + ". " + question + "\n\nYour Answer: " + userAnswer + "\n\nModel Feedback: " + analysis);
-                resultBlock.setTextSize(16);
-                resultBlock.setPadding(24, 24, 24, 24);
-                resultBlock.setTextColor(getResources().getColor(android.R.color.white));
-                resultBlock.setBackgroundResource(R.drawable.blue_card);
-
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout card = new LinearLayout(this);
+                card.setOrientation(LinearLayout.VERTICAL);
+                card.setPadding(24, 24, 24, 24);
+                card.setBackgroundResource(R.drawable.result_card_background);
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
                 );
-                params.setMargins(0, 20, 0, 0);
-                resultBlock.setLayoutParams(params);
+                lp.setMargins(0, 0, 0, 32);
+                card.setLayoutParams(lp);
 
-                resultContainer.addView(resultBlock);
+                TextView qText = new TextView(this);
+                qText.setText(index + ". " + question);
+                qText.setTextSize(16);
+                qText.setTextColor(getResources().getColor(android.R.color.white));
+
+                TextView aText = new TextView(this);
+                aText.setText("Your Answer: " + userAnswer);
+                aText.setTextColor(getResources().getColor(android.R.color.white));
+
+                TextView resultText = new TextView(this);
+                resultText.setText(isCorrect ? "✅ Correct" : "❌ Incorrect");
+                resultText.setTextColor(isCorrect ? getResources().getColor(android.R.color.holo_green_light) :
+                        getResources().getColor(android.R.color.holo_red_light));
+
+                card.addView(qText);
+                card.addView(aText);
+                card.addView(resultText);
+
+                resultContainer.addView(card);
+
+                // generateLLMFeedback(question, userAnswer, correctAnswer); // optional
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
         }
 
-        continueBtn.setOnClickListener(v -> {
-            startActivity(new Intent(ResultActivity.this, DashboardActivity.class));
-            finish();
-        });
+        btnContinue.setOnClickListener(v -> startActivity(new Intent(this, DashboardActivity.class)));
     }
 
-    // 模拟模型反馈（可自行扩展 AI 调用）
-    private String generateFeedback(String question, String userAnswer) {
-        if (userAnswer.equalsIgnoreCase("No Answer")) {
-            return "Try to answer next time to improve your understanding.";
-        } else if (question.toLowerCase().contains("docker")) {
-            return "Correct! Docker is used for lightweight containerization of applications.";
-        } else if (question.toLowerCase().contains("polymorphism")) {
-            return "Great! Polymorphism helps objects behave differently based on their class.";
-        } else if (question.toLowerCase().contains("android")) {
-            return "Activity is the right choice for managing user interfaces.";
-        } else {
-            return "Good try! Review this topic to strengthen your knowledge.";
-        }
+    // 示例：调用真实 LLM 模型（使用 llm2chatbot）
+    private void generateLLMFeedback(String question, String userAnswer, String correctAnswer) {
+        new Thread(() -> {
+            try {
+                URL url = new URL(LLM_API_URL);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setDoOutput(true);
+
+                JSONObject payload = new JSONObject();
+                payload.put("message", "The question was: " + question + "\nMy answer: " + userAnswer +
+                        "\nCorrect answer: " + correctAnswer +
+                        "\nPlease provide a short feedback on my answer.");
+
+                OutputStream os = conn.getOutputStream();
+                os.write(payload.toString().getBytes());
+                os.flush();
+
+                Scanner in = new Scanner(conn.getInputStream());
+                StringBuilder sb = new StringBuilder();
+                while (in.hasNext()) {
+                    sb.append(in.nextLine());
+                }
+                in.close();
+
+                JSONObject response = new JSONObject(sb.toString());
+                String reply = response.getString("reply");
+
+                runOnUiThread(() -> Toast.makeText(this, reply, Toast.LENGTH_LONG).show());
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 }
